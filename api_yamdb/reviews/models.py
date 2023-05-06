@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class User(AbstractUser):
@@ -149,10 +150,13 @@ class Review(models.Model):
         related_name='reviews',
         verbose_name='Произведение',
     )
-    score = models.IntegerField(null=True)
+    score = models.IntegerField(
+        default=5,
+        validators=[MinValueValidator(0), MaxValueValidator(10)])
     text = models.TextField()
 
     class Meta:
+        ordering = ('-pub_date', )
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = [
@@ -181,6 +185,7 @@ class Comment(models.Model):
     text = models.TextField()
 
     class Meta:
+        ordering = ('-pub_date', )
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
 

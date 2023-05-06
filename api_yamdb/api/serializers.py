@@ -124,9 +124,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if self.context['request'].method != 'POST':
             return data
-        if data.get('score') not in range(0, 10):
-            raise serializers.ValidationError('Оценка должна быть от 0 до 10!')
-
         if Review.objects.filter(
             author=self.context['request'].user,
             title=self.context.get('view').kwargs.get('title_id')
@@ -137,7 +134,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ['id', 'text', 'author', 'score', 'pub_date', ]
         model = Review
-        read_only_fields = ('pub_date', )
 
 
 class CommentSerializer(serializers.ModelSerializer):

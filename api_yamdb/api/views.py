@@ -3,12 +3,11 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action, api_view
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
-
 from .filters import TitleFilter
 from .permissions import (IsAdminOrReadOnlyPermission,
                           IsAuthorAdminModeratorOrReadOnly, OnlyAdmin)
@@ -155,7 +154,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для модели Review. """
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthorAdminModeratorOrReadOnly]
+    permission_classes = [IsAuthorAdminModeratorOrReadOnly, ]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -169,24 +169,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Review.objects.filter(title=self.get_title())
 
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            self.permission_classes = [AllowAny, ]
-        if self.request.method == 'POST':
-            self.permission_classes = [IsAuthenticated, ]
-        else:
-            self.permission_classes = [IsAuthorAdminModeratorOrReadOnly, ]
-        return super(ReviewViewSet, self).get_permissions()
-
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для модели Comment. """
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = []
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    permission_classes = [IsAuthorAdminModeratorOrReadOnly, ]
 
     def get_review(self):
-        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        return get_object_or_404(
+            Review,
+            pk=self.kwargs.get('review_id'),
+            title=title.id)
 
     def get_queryset(self):
         return Comment.objects.filter(review=self.get_review())
@@ -196,12 +192,3 @@ class CommentViewSet(viewsets.ModelViewSet):
             author=self.request.user,
             review=self.get_review()
         )
-
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            self.permission_classes = [AllowAny, ]
-        if self.request.method == 'POST':
-            self.permission_classes = [IsAuthenticated, ]
-        else:
-            self.permission_classes = [IsAuthorAdminModeratorOrReadOnly, ]
-        return super(CommentViewSet, self).get_permissions()
