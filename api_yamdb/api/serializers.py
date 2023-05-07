@@ -1,5 +1,3 @@
-import datetime as dt
-
 from django.core.validators import RegexValidator
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -52,10 +50,6 @@ class JWTTokenSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField(max_length=50)
 
-    class Meta:
-        model = User
-        fields = ('username', 'confirmation_code')
-
 
 class GenreSerializer(serializers.ModelSerializer):
 
@@ -95,23 +89,17 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Genre.objects.all(),
         many=True,
+        required=True,
     )
     category = serializers.SlugRelatedField(
         slug_field='slug',
         queryset=Category.objects.all(),
+        required=True,
     )
 
     class Meta:
         fields = '__all__'
         model = Title
-
-    def validate_year(self, value):
-        year = dt.date.today().year
-        if value > year:
-            raise serializers.ValidationError(
-                'Год выпуска не может быть больше текущего.'
-            )
-        return value
 
 
 class ReviewSerializer(serializers.ModelSerializer):
