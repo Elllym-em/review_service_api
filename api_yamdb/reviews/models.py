@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 
+from .validators import validate_year
+
 
 class User(AbstractUser):
     USER = 'user'
@@ -109,8 +111,9 @@ class Title(models.Model):
         'Название',
         max_length=256,
     )
-    year = models.IntegerField(
+    year = models.SmallIntegerField(
         'Год выпуска',
+        validators=(validate_year,)
     )
     description = models.TextField(
         'Описание',
@@ -126,6 +129,7 @@ class Title(models.Model):
         Category,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name='titles',
         verbose_name='Категория',
     )

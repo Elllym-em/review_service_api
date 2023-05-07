@@ -16,7 +16,7 @@ class TitleFilter(filters.FilterSet):
         field_name='name',
         lookup_expr='iexact',
     )
-    year = filters.CharFilter(
+    year = filters.NumberFilter(
         field_name='year',
         lookup_expr='iexact',
     )

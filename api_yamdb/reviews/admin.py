@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import Category, Comment, Genre, Review, Title, User
 
 
+@admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
         'username',
@@ -17,9 +18,7 @@ class UserAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(User)
-
-
+@admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = (
         'name',
@@ -30,9 +29,7 @@ class CategoryAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(Category)
-
-
+@admin.register(Genre)
 class GenreAdmin(admin.ModelAdmin):
     list_display = (
         'name',
@@ -43,9 +40,7 @@ class GenreAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(Genre)
-
-
+@admin.register(Title)
 class TitleAdmin(admin.ModelAdmin):
     list_display = (
         'name',
@@ -58,9 +53,7 @@ class TitleAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(Title)
-
-
+@admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = (
         'author',
@@ -74,9 +67,7 @@ class ReviewAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(Review)
-
-
+@admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = (
         'author',
@@ -87,6 +78,3 @@ class CommentAdmin(admin.ModelAdmin):
     search_fields = ('author', 'review',)
     list_filter = ('pub_date',)
     empty_value_display = '-пусто-'
-
-
-admin.site.register(Comment)
