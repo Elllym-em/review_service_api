@@ -1,8 +1,16 @@
-from django.core.validators import RegexValidator
-from rest_framework import serializers, status
-from rest_framework.response import Response
+from reviews.validators import validate_username
+from rest_framework import serializers
+
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
+
+
+class SignUpSerializer(serializers.Serializer):
+    """Сериализатор для проверки входящих данных при входе."""
+
+    email = serializers.EmailField(max_length=254,)
+    username = serializers.CharField(
+        validators=[validate_username], max_length=150)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,38 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
-
-    def validate(self, data):
-        if (data.get('username') is not None
-                and data.get('username').lower() == 'me'):
-            raise serializers.ValidationError(
-                'Username должен иметь отличное значение от "me"'
-            )
-        return data
-
-
-class SignUpSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(validators=[
-        RegexValidator(
-            regex=r'^[\w.@+-]+$',
-            message='Неккоректно введён <username>',
-            code='invalid_username'
-        )
-    ],
-        max_length=150
-    )
-
-    def validate_username(self, value):
-        if value is None:
-            return Response({'username': 'Это поле не может быть пустым.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        elif value.lower() == 'me':
-            raise serializers.ValidationError('Username cannot be "me"')
-        return value
-
-    class Meta:
-        model = User
-        fields = ('email', 'username')
 
 
 class JWTTokenSerializer(serializers.Serializer):
@@ -134,26 +110,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ['id', 'text', 'author', 'pub_date', ]
         model = Comment
-
-
-class ResponseSerializer(serializers.Serializer):
-    """Сериализатор для проверки входящих данных."""
-
-    username = serializers.CharField(validators=[
-        RegexValidator(
-            regex=r'^[\w.@+-]+$',
-            message='Неккоректно введён <username>',
-            code='invalid_username'
-        )
-    ],
-        max_length=150
-    )
-    email = serializers.EmailField(max_length=254)
-
-    def validate_username(self, value):
-        if value is None:
-            return Response({'username': 'Это поле не может быть пустым.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        elif value.lower() == 'me':
-            raise serializers.ValidationError('Username cannot be "me"')
-        return value

@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 
-from .validators import validate_year
+from .validators import validate_year, validate_username
 
 
 class User(AbstractUser):
@@ -14,7 +14,12 @@ class User(AbstractUser):
         (MODERATOR, 'Moderator'),
         (USER, 'User'),
     ]
-
+    username = models.CharField(
+        'Имя пользователя',
+        max_length=150,
+        unique=True,
+        validators=(validate_username, ),
+    )
     email = models.EmailField(
         verbose_name='Электронная почта',
         max_length=254,
@@ -67,7 +72,7 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == self.ADMIN
+        return self.role == self.ADMIN or self.is_staff or self.is_superuser
 
 
 class Genre(models.Model):

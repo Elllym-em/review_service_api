@@ -1,11 +1,13 @@
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+from rest_framework_simplejwt.tokens import AccessToken
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.tokens import default_token_generator
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
 from .filters import TitleFilter
@@ -13,10 +15,11 @@ from .permissions import (IsAdminOrReadOnlyPermission,
                           IsAuthorAdminModeratorOrReadOnly, OnlyAdmin)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, JWTTokenSerializer,
-                          ResponseSerializer, ReviewSerializer,
+                          ReviewSerializer,
                           SignUpSerializer, TitleCreateSerializer,
                           TitleListSerializer, UserSerializer)
-from .utils import generate_confirmation_code_and_send_email
+from django.db import IntegrityError
+from django.conf import settings
 
 
 class CreateListDestroyViewSet(
@@ -32,33 +35,22 @@ class CreateListDestroyViewSet(
 def signup_function(request):
     """Функция для регистрации нового пользователя"""
 
-    data = request.data
-    resp_ser = ResponseSerializer(data=data)
-    resp_ser.is_valid(raise_exception=True)
-    username = resp_ser.validated_data['username']
-    if not User.objects.filter(username=username).exists():
-        serializer = SignUpSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        generate_confirmation_code_and_send_email(
-            serializer.validated_data['username'],
-            serializer.validated_data['email']
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    user = get_object_or_404(User, username=username)
-    serializer = SignUpSerializer(user, data=request.data, partial=True)
+    serializer = SignUpSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    if serializer.validated_data['email'] == user.email:
-        serializer.save()
-        generate_confirmation_code_and_send_email(
-            serializer.validated_data['username'],
-            serializer.validated_data['email']
+    username = serializer.validated_data['username']
+    email = serializer.validated_data['email']
+    try:
+        user, _ = User.objects.get_or_create(
+            **serializer.validated_data
         )
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(
-        'Вы неверно указали почту!',
-        status=status.HTTP_400_BAD_REQUEST
-    )
+    except IntegrityError:
+        return Response(
+            'Такой username или e-mail уже используется.',
+            status=status.HTTP_400_BAD_REQUEST)
+    code = default_token_generator.make_token(user)
+    message = f'Здравствуйте, {username}! Ваш код подтверждения: {code}'
+    send_mail(_, message, settings.EMAIL_ADMIN, [email])
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -67,17 +59,15 @@ def token_function(request):
 
     serializer = JWTTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = get_object_or_404(User,
-                             username=serializer.validated_data['username'])
-    if (user.confirmation_code == serializer.validated_data['confirmation'
-                                                            '_code']):
-        refresh_token = RefreshToken.for_user(user)
-        access_token = str(refresh_token.access_token)
-        return Response({'token': access_token}, status=status.HTTP_200_OK)
-    return Response(
-        'Неверный код подтверждения!',
-        status=status.HTTP_400_BAD_REQUEST
-    )
+    data = serializer.validated_data
+    username = serializer.validated_data.get('username')
+    user = get_object_or_404(User, username=username)
+    if default_token_generator.check_token(user, data['confirmation_code']):
+        return Response(
+            {'token': str(AccessToken.for_user(user))},
+            status=status.HTTP_201_CREATED)
+    return Response(serializer.validated_data,
+                    status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
