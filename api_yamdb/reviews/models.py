@@ -46,10 +46,6 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ('username',)
-        constraints = [
-            models.UniqueConstraint(fields=('__all__'),
-                                    name='unique_username&email')
-        ]
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
