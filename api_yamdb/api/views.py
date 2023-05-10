@@ -1,13 +1,15 @@
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from django.core.mail import send_mail
-from rest_framework_simplejwt.tokens import AccessToken
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.contrib.auth.tokens import default_token_generator
+from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
 from .filters import TitleFilter
@@ -15,11 +17,9 @@ from .permissions import (IsAdminOrReadOnlyPermission,
                           IsAuthorAdminModeratorOrReadOnly, OnlyAdmin)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, JWTTokenSerializer,
-                          ReviewSerializer,
-                          SignUpSerializer, TitleCreateSerializer,
-                          TitleListSerializer, UserSerializer)
-from django.db import IntegrityError
-from django.conf import settings
+                          ReviewSerializer, SignUpSerializer,
+                          TitleCreateSerializer, TitleListSerializer,
+                          UserSerializer)
 
 
 class CreateListDestroyViewSet(
@@ -61,7 +61,10 @@ def token_function(request):
     serializer.is_valid(raise_exception=True)
     username = serializer.validated_data.get('username')
     user = get_object_or_404(User, username=username)
-    if default_token_generator.check_token(user, serializer.validated_data['confirmation_code']):
+    if default_token_generator.check_token(
+        user,
+        serializer.validated_data['confirmation_code']
+    ):
         return Response(
             {'token': str(AccessToken.for_user(user))},
             status=status.HTTP_201_CREATED)
@@ -167,11 +170,10 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthorAdminModeratorOrReadOnly, ]
 
     def get_review(self):
-        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         return get_object_or_404(
             Review,
             pk=self.kwargs.get('review_id'),
-            title=title.id)
+            title=self.kwargs.get('title_id'))
 
     def get_queryset(self):
         return Comment.objects.filter(review=self.get_review())
