@@ -59,10 +59,9 @@ def token_function(request):
 
     serializer = JWTTokenSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    data = serializer.validated_data
     username = serializer.validated_data.get('username')
     user = get_object_or_404(User, username=username)
-    if default_token_generator.check_token(user, data['confirmation_code']):
+    if default_token_generator.check_token(user, serializer.validated_data['confirmation_code']):
         return Response(
             {'token': str(AccessToken.for_user(user))},
             status=status.HTTP_201_CREATED)

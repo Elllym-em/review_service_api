@@ -43,17 +43,11 @@ class User(AbstractUser):
         choices=ROLES,
         default=USER
     )
-    confirmation_code = models.CharField(
-        verbose_name='Код подтверждения',
-        max_length=150,
-        null=True,
-        default=None
-    )
 
     class Meta:
         ordering = ('username',)
         constraints = [
-            models.UniqueConstraint(fields=('username', 'email'),
+            models.UniqueConstraint(fields=('__all__'),
                                     name='unique_username&email')
         ]
         verbose_name = 'Пользователь'
